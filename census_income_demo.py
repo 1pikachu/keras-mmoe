@@ -259,6 +259,8 @@ def main():
     if args.evaluate:
         print("## Evaluate Start:")
         # test_data=(test_data, test_label)
+        if True:
+            test_data = np.array(test_data, dtype = np.float32)
         total_time = 0.0
         total_sample = 0
         num_iter = int(len(test_data) / args.batch_size)
