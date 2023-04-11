@@ -171,7 +171,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", action='store_true', help="training.")
     # parser.add_argument("--evaluate", action='store_true', help="evaluation.")
-    parser.add_argument("--evaluate", type=str, default='True', help="evaluation.")
+    parser.add_argument("--realtime", action='store_true', help="evaluation.")
     parser.add_argument("--predict", action='store_true', help="predict.")
     parser.add_argument("--profile", action='store_true', help="profile.")
     parser.add_argument("--tensorboard", action='store_true')
@@ -266,7 +266,7 @@ def main():
 
         print("Throughput:", call_back.batch * args.batch_size / call_back.total_time)
 
-    if args.evaluate:
+    if args.realtime:
         print("## Evaluate Start:")
         # test_data=(test_data, test_label)
         if True:

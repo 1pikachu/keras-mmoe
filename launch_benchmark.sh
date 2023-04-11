@@ -53,7 +53,7 @@ function generate_core {
         fi
 	OOB_EXEC_HEADER+=" ${OOB_EXTRA_HEADER} "
         printf " ${OOB_EXEC_HEADER} \
-	    python census_income_demo.py \
+	    python census_income_demo.py --${mode_name} \
 		--epochs 10 --num_iter ${num_iter} --num_warmup 3 \
 		--precision ${precision} --batch_size $batch_size \
                 ${addtion_options} \
