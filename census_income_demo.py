@@ -56,29 +56,33 @@ class ROCCallback(Callback):
         return
 
     def on_epoch_end(self, epoch, logs={}):
-        train_prediction = self.model.predict(self.train_X)
-        validation_prediction = self.model.predict(self.validation_X)
-        test_prediction = self.model.predict(self.test_X)
+        #train_prediction = self.model.predict(self.train_X)
+        #validation_prediction = self.model.predict(self.validation_X)
+        #test_prediction = self.model.predict(self.test_X)
 
-        # Iterate through each task and output their ROC-AUC across different datasets
-        for index, output_name in enumerate(self.model.output_names):
-            train_roc_auc = roc_auc_score(self.train_Y[index], train_prediction[index])
-            validation_roc_auc = roc_auc_score(self.validation_Y[index], validation_prediction[index])
-            test_roc_auc = roc_auc_score(self.test_Y[index], test_prediction[index])
-            print(
-                'ROC-AUC-{}-Train: {} ROC-AUC-{}-Validation: {} ROC-AUC-{}-Test: {}'.format(
-                    output_name, round(train_roc_auc, 4),
-                    output_name, round(validation_roc_auc, 4),
-                    output_name, round(test_roc_auc, 4)
-                )
-            )
+        ## Iterate through each task and output their ROC-AUC across different datasets
+        #for index, output_name in enumerate(self.model.output_names):
+        #    train_roc_auc = roc_auc_score(self.train_Y[index], train_prediction[index])
+        #    validation_roc_auc = roc_auc_score(self.validation_Y[index], validation_prediction[index])
+        #    test_roc_auc = roc_auc_score(self.test_Y[index], test_prediction[index])
+        #    print(
+        #        'ROC-AUC-{}-Train: {} ROC-AUC-{}-Validation: {} ROC-AUC-{}-Test: {}'.format(
+        #            output_name, round(train_roc_auc, 4),
+        #            output_name, round(validation_roc_auc, 4),
+        #            output_name, round(test_roc_auc, 4)
+        #        )
+        #    )
 
         return
 
     def on_batch_begin(self, batch, logs={}):
+        self.time = time.time()
         return
 
     def on_batch_end(self, batch, logs={}):
+        if batch > 10:
+            self.total_time = self.total_time + time.time() - self.time
+            self.batch = self.batch + 1
         return
 
 
@@ -179,7 +183,6 @@ def main():
     args = parser.parse_args()
     print(args)
 
-
     # timeline
     import pathlib
     timeline_dir = str(pathlib.Path.cwd()) + '/timeline/' + str(os.getpid())
@@ -232,14 +235,23 @@ def main():
     # Print out model architecture summary
     model.summary()
 
+    if args.precision == 'float16' :
+        from tensorflow.keras import mixed_precision
+        policy = mixed_precision.Policy('mixed_float16')
+        mixed_precision.set_global_policy(policy)
+
     # Train the model
     if args.train:
+        call_back = ROCCallback(training_data=(train_data, train_label),
+               validation_data=(validation_data, validation_label),
+               test_data=(test_data, test_label))
+
         model.fit(
-            # x=train_data,
-            # y=train_label,
-            x=validation_data,
-            y=validation_label,
-            validation_data=(validation_data, validation_label),
+            x=train_data,
+            y=train_label,
+            #x=validation_data,
+            #y=validation_label,
+            #validation_data=(validation_data, validation_label),
             # callbacks=[
             #     ROCCallback(
             #         # training_data=(train_data, train_label),
@@ -248,13 +260,11 @@ def main():
             #         test_data=(test_data, test_label)
             #     )
             # ],
-            epochs=1
+            callbacks=[call_back],
+            epochs=1, validation_freq=3, batch_size=args.batch_size, steps_per_epoch=2000
         )
 
-    if args.precision == 'float16' :
-        from tensorflow.keras import mixed_precision
-        policy = mixed_precision.Policy('mixed_float16')
-        mixed_precision.set_global_policy(policy)
+        print("Throughput:", call_back.batch * args.batch_size / call_back.total_time)
 
     if args.evaluate:
         print("## Evaluate Start:")
