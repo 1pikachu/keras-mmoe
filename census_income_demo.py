@@ -45,6 +45,9 @@ class ROCCallback(Callback):
         self.validation_Y = validation_data[1]
         self.test_X = test_data[0]
         self.test_Y = test_data[1]
+        self.batch = 0
+        self.total_time = 0
+        self.time = 0
 
     def on_train_begin(self, logs={}):
         return
@@ -99,8 +102,8 @@ def data_preparation():
 
     # Load the dataset in Pandas
     train_df = pd.read_csv(
-        # 'data/census-income.data.gz',
-        'data/census-income.test.gz',
+        'data/census-income.data.gz',
+        #'data/census-income.test.gz',
         delimiter=',',
         header=None,
         index_col=None,
@@ -190,8 +193,10 @@ def main():
 
     # Load the data
     train_data, train_label, validation_data, validation_label, test_data, test_label, output_info = data_preparation()
-    # num_features = train_data.shape[1]
-    num_features = validation_data.shape[1]
+    if args.train:
+        num_features = train_data.shape[1]
+    else:
+        num_features = validation_data.shape[1]
 
     print('Training data shape = {}'.format(train_data.shape))
     print('Validation data shape = {}'.format(validation_data.shape))
@@ -261,7 +266,7 @@ def main():
             #     )
             # ],
             callbacks=[call_back],
-            epochs=1, validation_freq=3, batch_size=args.batch_size, steps_per_epoch=2000
+            epochs=1, validation_freq=2001, steps_per_epoch=2000
         )
 
         print("Throughput:", call_back.batch * args.batch_size / call_back.total_time)
