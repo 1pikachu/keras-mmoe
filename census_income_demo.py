@@ -38,7 +38,7 @@ tf.random.set_seed(SEED)
 
 # Simple callback to print out ROC-AUC
 class ROCCallback(Callback):
-    def __init__(self, training_data, validation_data, test_data):
+    def __init__(self, training_data, validation_data, test_data, tensorboard=False):
         self.train_X = training_data[0]
         self.train_Y = training_data[1]
         self.validation_X = validation_data[0]
@@ -48,6 +48,7 @@ class ROCCallback(Callback):
         self.batch = 0
         self.total_time = 0
         self.time = 0
+        self.tensorboard = tensorboard
 
     def on_train_begin(self, logs={}):
         return
@@ -80,12 +81,19 @@ class ROCCallback(Callback):
 
     def on_batch_begin(self, batch, logs={}):
         self.time = time.time()
+        if self.tensorboard and batch == 3:
+            print("---- collect tensorboard")
+            options = tf.profiler.experimental.ProfilerOptions(host_tracer_level = 3, python_tracer_level = 1, device_tracer_level = 1)
+            tf.profiler.experimental.start('./tensorboard_data', options = options)
         return
 
     def on_batch_end(self, batch, logs={}):
         if batch > 10:
             self.total_time = self.total_time + time.time() - self.time
             self.batch = self.batch + 1
+        if self.tensorboard and batch == 3:
+            tf.profiler.experimental.stop()
+            print("---- collect tensorboard end")
         return
 
 
@@ -240,6 +248,8 @@ def main():
     # Print out model architecture summary
     model.summary()
 
+    if args.precision != "tfloat32":
+        tf.config.experimental.enable_tensor_float_32_execution(False)
     if args.precision == 'float16' :
         from tensorflow.keras import mixed_precision
         policy = mixed_precision.Policy('mixed_float16')
@@ -249,7 +259,7 @@ def main():
     if args.train:
         call_back = ROCCallback(training_data=(train_data, train_label),
                validation_data=(validation_data, validation_label),
-               test_data=(test_data, test_label))
+               test_data=(test_data, test_label), tensorboard=args.tensorboard)
 
         model.fit(
             x=train_data,
