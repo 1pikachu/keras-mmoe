@@ -260,6 +260,8 @@ def main():
         call_back = ROCCallback(training_data=(train_data, train_label),
                validation_data=(validation_data, validation_label),
                test_data=(test_data, test_label), tensorboard=args.tensorboard)
+        if True:
+            train_data = np.array(train_data, dtype=np.float32)
 
         model.fit(
             x=train_data,
